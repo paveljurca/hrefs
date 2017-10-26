@@ -1,0 +1,50 @@
+#!/usr/bin/perl
+
+use 5.10.1;
+use strict;
+use warnings;
+use Data::Dumper;
+
+use lib '/home/pi/bin/lib/perl5/';
+use Net::Twitter;
+
+my %tokens = (
+  consumer_key        => 'Um6KzSofgnqUc1B6BlrOtU4yY',
+  consumer_secret     => '1nB40G75qOJmAbBbCchcp5Ppdn6DU3WwFVfPv0Bqr5rnHXjW0u',
+  access_token        => '328103522-cUJGl53dcDyolTzMOTxsKQJZzROJFVFzxB7uPLts',
+  access_token_secret => 'F9HXkerCejWvg1fUUZ6rdpo2PUTDFCI7xUP4Kufb70tqI',
+);
+my $twt = Net::Twitter->new(
+  traits  => [qw/API::RESTv1_1/],
+  %tokens,
+  ssl     =>  1);
+my $following = $twt->friends();
+
+my %perl_usr;
+while (my $u = <>) {
+  chomp $u;
+  $u =~ s/^\s+|\s+$//;
+  $u =~ s!.*/!!g;
+  $u =~ s!/$!!;
+
+  $u =~ /^$/ and next;
+  
+  my $friends = $twt->followers({
+    screen_name => $u,
+  });
+
+  for (@{$following->{users}}) {
+    my $usr = $_->{screen_name};
+    
+    $perl_usr{$usr} = 1 if $usr =~ /^$u/i;
+    next if exists $perl_usr{$usr};
+
+    for my $x (@{$friends->{users}}) {
+      $perl_usr{$usr} = 1
+        if $usr eq $x->{screen_name};
+    }
+  }
+
+}
+say for keys %perl_usr;
+
